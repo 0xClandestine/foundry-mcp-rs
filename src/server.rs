@@ -250,7 +250,10 @@ mod tests {
 
         assert_eq!(info.server_info.name, "foundry-mcp-server");
         assert_eq!(info.server_info.version, env!("CARGO_PKG_VERSION"));
-        assert_eq!(info.server_info.title, Some("Foundry MCP Server".to_string()));
+        assert_eq!(
+            info.server_info.title,
+            Some("Foundry MCP Server".to_string())
+        );
         assert!(info.instructions.is_some());
     }
 
@@ -261,10 +264,10 @@ mod tests {
 
         // Should support resources
         assert!(info.capabilities.resources.is_some());
-        
+
         // Should support tools
         assert!(info.capabilities.tools.is_some());
-        
+
         // Should not support prompts by default
         assert!(info.capabilities.prompts.is_none());
     }
@@ -283,7 +286,7 @@ mod tests {
     fn test_handler_is_clone() {
         let handler = create_test_handler();
         let cloned = handler.clone();
-        
+
         // Both should have the same foundry bin path
         assert_eq!(handler.foundry_bin_path(), cloned.foundry_bin_path());
     }
@@ -298,7 +301,7 @@ mod tests {
         };
         let executor = FoundryExecutor::with_config(schema, config);
         let _handler = FoundryMcpHandler::new(executor);
-        
+
         // Handler should be created successfully with custom config
         // The config restrictions are enforced at the executor level
     }
@@ -307,7 +310,7 @@ mod tests {
     fn test_server_info_has_website() {
         let handler = create_test_handler();
         let info = handler.get_info();
-        
+
         assert!(info.server_info.website_url.is_some());
         let website = info.server_info.website_url.unwrap();
         assert!(website.contains("foundry"));
@@ -317,13 +320,13 @@ mod tests {
     fn test_capabilities_structure() {
         let handler = create_test_handler();
         let info = handler.get_info();
-        
+
         // Verify capabilities structure
         if let Some(resources) = &info.capabilities.resources {
             // Resources capability exists
             assert!(resources.subscribe.is_none() || resources.subscribe.is_some());
         }
-        
+
         if let Some(tools) = &info.capabilities.tools {
             // Tools capability exists
             assert!(tools.list_changed.is_none() || tools.list_changed.is_some());
@@ -335,9 +338,9 @@ mod tests {
         let schema = SchemaFile { tools: vec![] };
         let executor = FoundryExecutor::new(schema);
         let bin_path = executor.foundry_bin_path().clone();
-        
+
         let handler = FoundryMcpHandler::new(executor);
-        
+
         // Handler should preserve the executor's bin path
         assert_eq!(handler.foundry_bin_path(), &bin_path);
     }
@@ -346,11 +349,11 @@ mod tests {
     fn test_multiple_handlers_can_coexist() {
         let handler1 = create_test_handler();
         let handler2 = create_test_handler();
-        
+
         // Both handlers should be independently valid
         let info1 = handler1.get_info();
         let info2 = handler2.get_info();
-        
+
         assert_eq!(info1.server_info.name, info2.server_info.name);
     }
 }

@@ -134,7 +134,7 @@ mod tests {
         std::env::set_current_dir(temp_dir.path()).unwrap();
 
         let ctx = ContextConfig::load();
-        
+
         // Should return default (empty) config
         assert!(ctx.tools.is_empty());
         assert!(ctx.flags.is_empty());
@@ -148,7 +148,7 @@ mod tests {
     fn test_from_file_valid_json() {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join("test_context.json");
-        
+
         let json_content = r#"{
             "tools": {
                 "forge_build": "Custom build context"
@@ -160,22 +160,28 @@ mod tests {
                 "address": "Custom address context"
             }
         }"#;
-        
+
         fs::write(&file_path, json_content).unwrap();
-        
+
         let ctx = ContextConfig::from_file(file_path.to_str().unwrap()).unwrap();
-        assert_eq!(ctx.tools.get("forge_build").unwrap(), "Custom build context");
+        assert_eq!(
+            ctx.tools.get("forge_build").unwrap(),
+            "Custom build context"
+        );
         assert_eq!(ctx.flags.get("rpc-url").unwrap(), "Custom RPC context");
-        assert_eq!(ctx.positionals.get("address").unwrap(), "Custom address context");
+        assert_eq!(
+            ctx.positionals.get("address").unwrap(),
+            "Custom address context"
+        );
     }
 
     #[test]
     fn test_from_file_invalid_json() {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join("invalid.json");
-        
+
         fs::write(&file_path, "not valid json {{{").unwrap();
-        
+
         let result = ContextConfig::from_file(file_path.to_str().unwrap());
         assert!(result.is_err());
     }
@@ -189,11 +195,11 @@ mod tests {
     #[test]
     fn test_context_preserves_original_when_no_injection() {
         let ctx = ContextConfig::default();
-        
+
         let tool_desc = ctx.tool_description("some_tool", "Original tool description");
         let flag_desc = ctx.flag_description("some_flag", "Original flag description");
         let pos_desc = ctx.positional_description("some_arg", "Original arg description");
-        
+
         // Should return original strings unchanged
         assert_eq!(tool_desc, "Original tool description");
         assert_eq!(flag_desc, "Original flag description");
@@ -204,7 +210,7 @@ mod tests {
     fn test_context_with_empty_string_injection() {
         let mut ctx = ContextConfig::default();
         ctx.tools.insert("tool1".to_string(), "".to_string());
-        
+
         let result = ctx.tool_description("tool1", "Original");
         // Empty context still adds the separator
         assert_eq!(result, "Original\n\n");
@@ -217,7 +223,7 @@ mod tests {
             "tool1".to_string(),
             "Special chars: <>&\"'`$()[]{}\\".to_string(),
         );
-        
+
         let result = ctx.tool_description("tool1", "Original");
         assert!(result.contains("Special chars: <>&\"'`$()[]{}\\"));
     }
@@ -225,11 +231,9 @@ mod tests {
     #[test]
     fn test_context_multiline_injection() {
         let mut ctx = ContextConfig::default();
-        ctx.flags.insert(
-            "config".to_string(),
-            "Line 1\nLine 2\nLine 3".to_string(),
-        );
-        
+        ctx.flags
+            .insert("config".to_string(), "Line 1\nLine 2\nLine 3".to_string());
+
         let result = ctx.flag_description("config", "Config file");
         assert!(result.contains("Line 1\nLine 2\nLine 3"));
         assert!(result.starts_with("Config file\n\n"));
@@ -243,7 +247,7 @@ mod tests {
             "positionals": {"p1": "desc3"},
             "extra_field": "should_be_ignored"
         }"#;
-        
+
         let ctx: Result<ContextConfig, _> = serde_json::from_str(json);
         assert!(ctx.is_ok());
         let ctx = ctx.unwrap();
@@ -256,7 +260,7 @@ mod tests {
     fn test_deserialize_with_missing_fields() {
         // All fields are optional with #[serde(default)]
         let json = r#"{}"#;
-        
+
         let ctx: Result<ContextConfig, _> = serde_json::from_str(json);
         assert!(ctx.is_ok());
         let ctx = ctx.unwrap();

@@ -413,15 +413,13 @@ mod tests {
                 ToolSchema {
                     name: "cast_call".to_string(),
                     description: "Call a contract".to_string(),
-                    positionals: vec![
-                        PositionalSchema {
-                            name: "address".to_string(),
-                            param_type: "string".to_string(),
-                            description: "Contract address".to_string(),
-                            required: true,
-                            index: Some(0),
-                        },
-                    ],
+                    positionals: vec![PositionalSchema {
+                        name: "address".to_string(),
+                        param_type: "string".to_string(),
+                        description: "Contract address".to_string(),
+                        required: true,
+                        index: Some(0),
+                    }],
                     options: vec![
                         OptionSchema {
                             name: "rpc-url".to_string(),
@@ -470,17 +468,15 @@ mod tests {
                     name: "forge_script".to_string(),
                     description: "Run a script".to_string(),
                     positionals: vec![],
-                    options: vec![
-                        OptionSchema {
-                            name: "broadcast".to_string(),
-                            param_type: "boolean".to_string(),
-                            description: "Broadcast transactions".to_string(),
-                            required: false,
-                            short: None,
-                            value_name: None,
-                            default: None,
-                        },
-                    ],
+                    options: vec![OptionSchema {
+                        name: "broadcast".to_string(),
+                        param_type: "boolean".to_string(),
+                        description: "Broadcast transactions".to_string(),
+                        required: false,
+                        short: None,
+                        value_name: None,
+                        default: None,
+                    }],
                     flags: vec![],
                 },
             ],
@@ -525,10 +521,10 @@ mod tests {
         // Use load_default which applies dangerous restrictions
         let config = Config::load_default();
         let executor = FoundryExecutor::with_config(schema, config);
-        
+
         // anvil should be filtered out by default
         assert!(executor.tools.get("anvil").is_none());
-        
+
         // Safe tools should be present
         assert!(executor.tools.get("forge_build").is_some());
         assert!(executor.tools.get("cast_call").is_some());
@@ -542,15 +538,15 @@ mod tests {
             forbidden_flags: vec![],
             allow_dangerous: true, // Allow anvil but not forge_build
         };
-        
+
         let executor = FoundryExecutor::with_config(schema, config);
-        
+
         // forge_build should be filtered out
         assert!(executor.tools.get("forge_build").is_none());
-        
+
         // anvil should be present (allow_dangerous = true)
         assert!(executor.tools.get("anvil").is_some());
-        
+
         // Other tools should be present
         assert!(executor.tools.get("cast_call").is_some());
     }
@@ -563,20 +559,25 @@ mod tests {
             forbidden_flags: vec!["broadcast".to_string(), "private-key".to_string()],
             allow_dangerous: true,
         };
-        
+
         let executor = FoundryExecutor::with_config(schema, config);
-        
+
         // Tool should exist
         let tool_list = executor.tool_list();
         let cast_call = tool_list.iter().find(|t| t.name == "cast_call").unwrap();
-        
+
         // Check that forbidden flags are not in the input schema
-        let properties = cast_call.input_schema.get("properties").unwrap().as_object().unwrap();
-        
+        let properties = cast_call
+            .input_schema
+            .get("properties")
+            .unwrap()
+            .as_object()
+            .unwrap();
+
         // Safe flags should be present
         assert!(properties.contains_key("json"));
         assert!(properties.contains_key("rpc-url"));
-        
+
         // Forbidden flags should NOT be present
         assert!(!properties.contains_key("broadcast"));
         assert!(!properties.contains_key("private-key"));
@@ -589,7 +590,7 @@ mod tests {
             forbidden_flags: vec![],
             allow_dangerous: true,
         };
-        
+
         let tool = ToolSchema {
             name: "anvil_fork".to_string(),
             description: "Fork with anvil".to_string(),
@@ -597,7 +598,7 @@ mod tests {
             options: vec![],
             flags: vec![],
         };
-        
+
         // Should be filtered because base command "anvil" is forbidden
         assert!(!FoundryExecutor::is_tool_allowed(&tool, &config));
     }
@@ -609,7 +610,7 @@ mod tests {
             forbidden_flags: vec![],
             allow_dangerous: true,
         };
-        
+
         let tool = ToolSchema {
             name: "forge_script".to_string(),
             description: "Run script".to_string(),
@@ -617,7 +618,7 @@ mod tests {
             options: vec![],
             flags: vec![],
         };
-        
+
         // Should be filtered by exact name match
         assert!(!FoundryExecutor::is_tool_allowed(&tool, &config));
     }
@@ -635,7 +636,7 @@ mod tests {
     #[test]
     fn test_value_to_string_conversions() {
         use serde_json::json;
-        
+
         assert_eq!(
             FoundryExecutor::value_to_string(&json!("test")),
             Some("test".to_string())
@@ -657,7 +658,7 @@ mod tests {
     #[test]
     fn test_value_to_string_invalid_types() {
         use serde_json::json;
-        
+
         // Objects and arrays should not convert
         assert!(FoundryExecutor::value_to_string(&json!({"key": "value"})).is_none());
         assert!(FoundryExecutor::value_to_string(&json!([1, 2, 3])).is_none());
@@ -669,57 +670,61 @@ mod tests {
         let schema = ToolSchema {
             name: "test_tool".to_string(),
             description: "Test tool".to_string(),
-            positionals: vec![
-                PositionalSchema {
-                    name: "arg1".to_string(),
-                    param_type: "string".to_string(),
-                    description: "First arg".to_string(),
-                    required: true,
-                    index: Some(0),
-                },
-            ],
-            options: vec![
-                OptionSchema {
-                    name: "option1".to_string(),
-                    param_type: "string".to_string(),
-                    description: "Option 1".to_string(),
-                    required: false,
-                    short: None,
-                    value_name: None,
-                    default: Some(serde_json::json!("default_value")),
-                },
-            ],
-            flags: vec![
-                FlagSchema {
-                    name: "flag1".to_string(),
-                    param_type: "boolean".to_string(),
-                    description: "Flag 1".to_string(),
-                    required: false,
-                    short: None,
-                },
-            ],
+            positionals: vec![PositionalSchema {
+                name: "arg1".to_string(),
+                param_type: "string".to_string(),
+                description: "First arg".to_string(),
+                required: true,
+                index: Some(0),
+            }],
+            options: vec![OptionSchema {
+                name: "option1".to_string(),
+                param_type: "string".to_string(),
+                description: "Option 1".to_string(),
+                required: false,
+                short: None,
+                value_name: None,
+                default: Some(serde_json::json!("default_value")),
+            }],
+            flags: vec![FlagSchema {
+                name: "flag1".to_string(),
+                param_type: "boolean".to_string(),
+                description: "Flag 1".to_string(),
+                required: false,
+                short: None,
+            }],
         };
-        
+
         let context = ContextConfig::default();
         let config = Config::default();
         let tool = FoundryExecutor::schema_to_tool(&schema, &config, &context);
-        
+
         assert_eq!(tool.name, "test_tool");
-        
-        let properties = tool.input_schema.get("properties").unwrap().as_object().unwrap();
+
+        let properties = tool
+            .input_schema
+            .get("properties")
+            .unwrap()
+            .as_object()
+            .unwrap();
         assert!(properties.contains_key("arg1"));
         assert!(properties.contains_key("option1"));
         assert!(properties.contains_key("flag1"));
-        
+
         // Check that default value is included
         let option1 = properties.get("option1").unwrap();
         assert_eq!(
             option1.get("default").unwrap().as_str().unwrap(),
             "default_value"
         );
-        
+
         // Check required fields
-        let required = tool.input_schema.get("required").unwrap().as_array().unwrap();
+        let required = tool
+            .input_schema
+            .get("required")
+            .unwrap()
+            .as_array()
+            .unwrap();
         assert_eq!(required.len(), 1);
         assert_eq!(required[0].as_str().unwrap(), "arg1");
     }
@@ -728,7 +733,7 @@ mod tests {
     fn test_execute_tool_requires_valid_tool_name() {
         let schema = create_test_schema();
         let executor = FoundryExecutor::new(schema);
-        
+
         let result = executor.execute_tool("nonexistent_tool", &None);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("not found"));
@@ -738,10 +743,10 @@ mod tests {
     fn test_get_command_path_with_bin_path() {
         let schema = SchemaFile { tools: vec![] };
         let mut executor = FoundryExecutor::new(schema);
-        
+
         // Manually set the bin path for testing
         executor.foundry_bin_path = Some("/test/bin".to_string());
-        
+
         let path = executor.get_command_path("forge");
         assert_eq!(path, "/test/bin/forge");
     }
@@ -751,7 +756,7 @@ mod tests {
         let schema = SchemaFile { tools: vec![] };
         let mut executor = FoundryExecutor::new(schema);
         executor.foundry_bin_path = None;
-        
+
         let path = executor.get_command_path("forge");
         assert_eq!(path, "forge");
     }
@@ -762,26 +767,43 @@ mod tests {
         // Use safe_default which has all dangerous restrictions
         let config = Config::safe_default();
         let executor = FoundryExecutor::with_config(schema, config);
-        
+
         // Verify dangerous commands are filtered
         assert!(executor.tools.get("anvil").is_none());
-        
+
         // Verify dangerous flags are filtered from the MCP tool list
         let tool_list = executor.tool_list();
         let cast_call = tool_list.iter().find(|t| t.name == "cast_call");
-        
+
         assert!(cast_call.is_some(), "cast_call should exist");
-        
+
         if let Some(tool) = cast_call {
-            let properties = tool.input_schema.get("properties").unwrap().as_object().unwrap();
-            
+            let properties = tool
+                .input_schema
+                .get("properties")
+                .unwrap()
+                .as_object()
+                .unwrap();
+
             // Forbidden flags should NOT be in the properties
-            assert!(!properties.contains_key("broadcast"), "broadcast flag should be filtered");
-            assert!(!properties.contains_key("private-key"), "private-key option should be filtered");
-            
+            assert!(
+                !properties.contains_key("broadcast"),
+                "broadcast flag should be filtered"
+            );
+            assert!(
+                !properties.contains_key("private-key"),
+                "private-key option should be filtered"
+            );
+
             // Safe properties should still be present
-            assert!(properties.contains_key("json"), "json flag should be present");
-            assert!(properties.contains_key("rpc-url"), "rpc-url option should be present");
+            assert!(
+                properties.contains_key("json"),
+                "json flag should be present"
+            );
+            assert!(
+                properties.contains_key("rpc-url"),
+                "rpc-url option should be present"
+            );
         }
     }
 
@@ -793,13 +815,13 @@ mod tests {
             forbidden_flags: vec![],
             allow_dangerous: true,
         };
-        
+
         let executor = FoundryExecutor::with_config(schema, config);
         let tool_list = executor.tool_list();
-        
+
         // cast_call should not be in the list
         assert!(!tool_list.iter().any(|t| t.name == "cast_call"));
-        
+
         // Other allowed tools should be present
         assert!(tool_list.iter().any(|t| t.name == "forge_build"));
     }
