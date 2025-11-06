@@ -139,7 +139,7 @@ pub fn find_token_by_address<'a>(
         .iter()
         .filter(|t| {
             let matches_address = t.address.to_lowercase() == address_lower;
-            let matches_chain = chain_id.map_or(true, |id| t.chain_id == id);
+            let matches_chain = chain_id.is_none_or(|id| t.chain_id == id);
             matches_address && matches_chain
         })
         .collect()
@@ -159,7 +159,7 @@ pub fn search_tokens<'a>(
         .filter(|t| {
             let matches_query =
                 t.symbol.to_lowercase() == query_lower || t.name.to_lowercase() == query_lower;
-            let matches_chain = chain_id.map_or(true, |id| t.chain_id == id);
+            let matches_chain = chain_id.is_none_or(|id| t.chain_id == id);
             matches_query && matches_chain
         })
         .collect();
@@ -176,7 +176,7 @@ pub fn search_tokens<'a>(
         .filter(|t| {
             let matches_query = t.symbol.to_lowercase().contains(&query_lower)
                 || t.name.to_lowercase().contains(&query_lower);
-            let matches_chain = chain_id.map_or(true, |id| t.chain_id == id);
+            let matches_chain = chain_id.is_none_or(|id| t.chain_id == id);
             matches_query && matches_chain
         })
         .collect();
