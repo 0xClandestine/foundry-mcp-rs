@@ -766,14 +766,22 @@ mod tests {
         // Verify dangerous commands are filtered
         assert!(executor.tools.get("anvil").is_none());
         
-        // Verify dangerous flags are filtered from remaining tools
-        if let Some(cast_tool) = executor.tools.get("cast_call") {
-            let has_broadcast_flag = cast_tool.flags.iter().any(|f| f.name == "broadcast");
-            let has_private_key_option = cast_tool.options.iter().any(|o| o.name == "private-key");
+        // Verify dangerous flags are filtered from the MCP tool list
+        let tool_list = executor.tool_list();
+        let cast_call = tool_list.iter().find(|t| t.name == "cast_call");
+        
+        assert!(cast_call.is_some(), "cast_call should exist");
+        
+        if let Some(tool) = cast_call {
+            let properties = tool.input_schema.get("properties").unwrap().as_object().unwrap();
             
-            // These should not be present in the schema
-            assert!(!has_broadcast_flag, "broadcast flag should be filtered");
-            assert!(!has_private_key_option, "private-key option should be filtered");
+            // Forbidden flags should NOT be in the properties
+            assert!(!properties.contains_key("broadcast"), "broadcast flag should be filtered");
+            assert!(!properties.contains_key("private-key"), "private-key option should be filtered");
+            
+            // Safe properties should still be present
+            assert!(properties.contains_key("json"), "json flag should be present");
+            assert!(properties.contains_key("rpc-url"), "rpc-url option should be present");
         }
     }
 
