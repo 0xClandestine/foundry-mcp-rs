@@ -192,8 +192,9 @@ mod tests {
         // Should create executor without panic
         let executor = FoundryExecutor::with_config(schema_file, config);
 
-        // Executor should have some tools (after filtering)
-        assert!(executor.tool_list().len() >= 0);
+        // Executor should be created successfully with a tool list
+        let _tool_list = executor.tool_list();
+        // The tool list exists and can be accessed (no panic)
     }
 
     #[test]
