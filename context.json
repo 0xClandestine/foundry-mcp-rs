@@ -1,0 +1,12 @@
+{
+  "tools": {
+    "cast_send": "WARNING: This sends REAL transactions to the blockchain!\n• Always simulate first using cast_call tool with the --trace flag enabled.\n• Double-check addresses and values.\n• Transactions are irreversible!"
+  },
+  "flags": {
+    "rpc-url": "TIP: Use `search_rpc_url` or `list_popular_chains` tools to find RPC endpoints."
+  },
+  "positionals": {
+    "sig": "FORMAT: 'functionName(type1,type2)' for functions (e.g., 'transfer(address,uint256)').\nFor tuples/structs (like args in cast_abi_encode tool), omit the function name: e.g., '(uint256,address)'.",
+    "args": "FORMAT: Use quotes around composite types!\n\nSimple types: 0x123... 1000\nTuple/struct: \"(100,0x123...)\"\nNested: \"((100,0x123...),200)\"\nArray: \"[1,2,3]\"\nStruct array: \"[(100,0x123...),(200,0x987...)]\"\n\nReal example for setReservation(address,(uint64,uint64,uint64,bytes,bytes)):\n  0x7Fd8cF9Ebc94763fA7a323F523392788cf5733a2 \"(32768,1762369681,1793905681,0x0001,0x3232)\""
+  }
+}
