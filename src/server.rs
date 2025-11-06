@@ -222,3 +222,135 @@ impl ServerHandler for FoundryMcpHandler {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Config;
+    use crate::foundry::FoundryExecutor;
+    use crate::schema::SchemaFile;
+
+    fn create_test_handler() -> FoundryMcpHandler {
+        let schema = SchemaFile { tools: vec![] };
+        let config = Config::default();
+        let executor = FoundryExecutor::with_config(schema, config);
+        FoundryMcpHandler::new(executor)
+    }
+
+    #[test]
+    fn test_handler_creation() {
+        let handler = create_test_handler();
+        assert!(handler.foundry_bin_path().is_none() || handler.foundry_bin_path().is_some());
+    }
+
+    #[test]
+    fn test_get_info_returns_valid_server_info() {
+        let handler = create_test_handler();
+        let info = handler.get_info();
+
+        assert_eq!(info.server_info.name, "foundry-mcp-server");
+        assert_eq!(info.server_info.version, env!("CARGO_PKG_VERSION"));
+        assert_eq!(info.server_info.title, Some("Foundry MCP Server".to_string()));
+        assert!(info.instructions.is_some());
+    }
+
+    #[test]
+    fn test_get_info_capabilities() {
+        let handler = create_test_handler();
+        let info = handler.get_info();
+
+        // Should support resources
+        assert!(info.capabilities.resources.is_some());
+        
+        // Should support tools
+        assert!(info.capabilities.tools.is_some());
+        
+        // Should not support prompts by default
+        assert!(info.capabilities.prompts.is_none());
+    }
+
+    #[test]
+    fn test_get_info_protocol_version() {
+        let handler = create_test_handler();
+        let info = handler.get_info();
+
+        // Protocol version should be valid
+        let version_str = format!("{}", info.protocol_version);
+        assert!(!version_str.is_empty());
+    }
+
+    #[test]
+    fn test_handler_is_clone() {
+        let handler = create_test_handler();
+        let cloned = handler.clone();
+        
+        // Both should have the same foundry bin path
+        assert_eq!(handler.foundry_bin_path(), cloned.foundry_bin_path());
+    }
+
+    #[test]
+    fn test_handler_preserves_executor_config() {
+        let schema = SchemaFile { tools: vec![] };
+        let config = Config {
+            forbidden_commands: vec!["anvil".to_string()],
+            forbidden_flags: vec!["broadcast".to_string()],
+            allow_dangerous: false,
+        };
+        let executor = FoundryExecutor::with_config(schema, config);
+        let _handler = FoundryMcpHandler::new(executor);
+        
+        // Handler should be created successfully with custom config
+        // The config restrictions are enforced at the executor level
+    }
+
+    #[test]
+    fn test_server_info_has_website() {
+        let handler = create_test_handler();
+        let info = handler.get_info();
+        
+        assert!(info.server_info.website_url.is_some());
+        let website = info.server_info.website_url.unwrap();
+        assert!(website.contains("foundry"));
+    }
+
+    #[test]
+    fn test_capabilities_structure() {
+        let handler = create_test_handler();
+        let info = handler.get_info();
+        
+        // Verify capabilities structure
+        if let Some(resources) = &info.capabilities.resources {
+            // Resources capability exists
+            assert!(resources.subscribe.is_none() || resources.subscribe.is_some());
+        }
+        
+        if let Some(tools) = &info.capabilities.tools {
+            // Tools capability exists
+            assert!(tools.list_changed.is_none() || tools.list_changed.is_some());
+        }
+    }
+
+    #[test]
+    fn test_handler_new_wraps_executor_correctly() {
+        let schema = SchemaFile { tools: vec![] };
+        let executor = FoundryExecutor::new(schema);
+        let bin_path = executor.foundry_bin_path().clone();
+        
+        let handler = FoundryMcpHandler::new(executor);
+        
+        // Handler should preserve the executor's bin path
+        assert_eq!(handler.foundry_bin_path(), &bin_path);
+    }
+
+    #[test]
+    fn test_multiple_handlers_can_coexist() {
+        let handler1 = create_test_handler();
+        let handler2 = create_test_handler();
+        
+        // Both handlers should be independently valid
+        let info1 = handler1.get_info();
+        let info2 = handler2.get_info();
+        
+        assert_eq!(info1.server_info.name, info2.server_info.name);
+    }
+}

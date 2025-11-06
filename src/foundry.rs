@@ -394,3 +394,405 @@ impl FoundryExecutor {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::schema::{FlagSchema, OptionSchema, PositionalSchema};
+
+    fn create_test_schema() -> SchemaFile {
+        SchemaFile {
+            tools: vec![
+                ToolSchema {
+                    name: "forge_build".to_string(),
+                    description: "Build the project".to_string(),
+                    positionals: vec![],
+                    options: vec![],
+                    flags: vec![],
+                },
+                ToolSchema {
+                    name: "cast_call".to_string(),
+                    description: "Call a contract".to_string(),
+                    positionals: vec![
+                        PositionalSchema {
+                            name: "address".to_string(),
+                            param_type: "string".to_string(),
+                            description: "Contract address".to_string(),
+                            required: true,
+                            index: Some(0),
+                        },
+                    ],
+                    options: vec![
+                        OptionSchema {
+                            name: "rpc-url".to_string(),
+                            param_type: "string".to_string(),
+                            description: "RPC URL".to_string(),
+                            required: false,
+                            short: None,
+                            value_name: None,
+                            default: None,
+                        },
+                        OptionSchema {
+                            name: "private-key".to_string(),
+                            param_type: "string".to_string(),
+                            description: "Private key".to_string(),
+                            required: false,
+                            short: None,
+                            value_name: None,
+                            default: None,
+                        },
+                    ],
+                    flags: vec![
+                        FlagSchema {
+                            name: "json".to_string(),
+                            param_type: "boolean".to_string(),
+                            description: "Output as JSON".to_string(),
+                            required: false,
+                            short: None,
+                        },
+                        FlagSchema {
+                            name: "broadcast".to_string(),
+                            param_type: "boolean".to_string(),
+                            description: "Broadcast transaction".to_string(),
+                            required: false,
+                            short: None,
+                        },
+                    ],
+                },
+                ToolSchema {
+                    name: "anvil".to_string(),
+                    description: "Start local testnet".to_string(),
+                    positionals: vec![],
+                    options: vec![],
+                    flags: vec![],
+                },
+                ToolSchema {
+                    name: "forge_script".to_string(),
+                    description: "Run a script".to_string(),
+                    positionals: vec![],
+                    options: vec![
+                        OptionSchema {
+                            name: "broadcast".to_string(),
+                            param_type: "boolean".to_string(),
+                            description: "Broadcast transactions".to_string(),
+                            required: false,
+                            short: None,
+                            value_name: None,
+                            default: None,
+                        },
+                    ],
+                    flags: vec![],
+                },
+            ],
+        }
+    }
+
+    #[test]
+    fn test_parse_subcommand_parts_basic() {
+        let parts = vec!["forge", "build"];
+        let (result, has_triple) = parse_subcommand_parts(&parts);
+        assert_eq!(result, vec!["build"]);
+        assert!(!has_triple);
+    }
+
+    #[test]
+    fn test_parse_subcommand_parts_with_hyphen() {
+        let parts = vec!["forge", "clean", "cache"];
+        let (result, has_triple) = parse_subcommand_parts(&parts);
+        assert_eq!(result, vec!["clean-cache"]);
+        assert!(!has_triple);
+    }
+
+    #[test]
+    fn test_parse_subcommand_parts_with_triple_underscore() {
+        let parts = vec!["cast", "block", "", "", "number"];
+        let (result, has_triple) = parse_subcommand_parts(&parts);
+        assert_eq!(result, vec!["block", "--number"]);
+        assert!(has_triple);
+    }
+
+    #[test]
+    fn test_parse_subcommand_parts_empty() {
+        let parts = vec!["forge"];
+        let (result, has_triple) = parse_subcommand_parts(&parts);
+        assert!(result.is_empty());
+        assert!(!has_triple);
+    }
+
+    #[test]
+    fn test_default_executor_filters_dangerous_commands() {
+        let schema = create_test_schema();
+        // Use load_default which applies dangerous restrictions
+        let config = Config::load_default();
+        let executor = FoundryExecutor::with_config(schema, config);
+        
+        // anvil should be filtered out by default
+        assert!(executor.tools.get("anvil").is_none());
+        
+        // Safe tools should be present
+        assert!(executor.tools.get("forge_build").is_some());
+        assert!(executor.tools.get("cast_call").is_some());
+    }
+
+    #[test]
+    fn test_executor_with_custom_config_filters_commands() {
+        let schema = create_test_schema();
+        let config = Config {
+            forbidden_commands: vec!["forge_build".to_string()],
+            forbidden_flags: vec![],
+            allow_dangerous: true, // Allow anvil but not forge_build
+        };
+        
+        let executor = FoundryExecutor::with_config(schema, config);
+        
+        // forge_build should be filtered out
+        assert!(executor.tools.get("forge_build").is_none());
+        
+        // anvil should be present (allow_dangerous = true)
+        assert!(executor.tools.get("anvil").is_some());
+        
+        // Other tools should be present
+        assert!(executor.tools.get("cast_call").is_some());
+    }
+
+    #[test]
+    fn test_executor_filters_forbidden_flags() {
+        let schema = create_test_schema();
+        let config = Config {
+            forbidden_commands: vec![],
+            forbidden_flags: vec!["broadcast".to_string(), "private-key".to_string()],
+            allow_dangerous: true,
+        };
+        
+        let executor = FoundryExecutor::with_config(schema, config);
+        
+        // Tool should exist
+        let tool_list = executor.tool_list();
+        let cast_call = tool_list.iter().find(|t| t.name == "cast_call").unwrap();
+        
+        // Check that forbidden flags are not in the input schema
+        let properties = cast_call.input_schema.get("properties").unwrap().as_object().unwrap();
+        
+        // Safe flags should be present
+        assert!(properties.contains_key("json"));
+        assert!(properties.contains_key("rpc-url"));
+        
+        // Forbidden flags should NOT be present
+        assert!(!properties.contains_key("broadcast"));
+        assert!(!properties.contains_key("private-key"));
+    }
+
+    #[test]
+    fn test_is_tool_allowed_filters_base_command() {
+        let config = Config {
+            forbidden_commands: vec!["anvil".to_string()],
+            forbidden_flags: vec![],
+            allow_dangerous: true,
+        };
+        
+        let tool = ToolSchema {
+            name: "anvil_fork".to_string(),
+            description: "Fork with anvil".to_string(),
+            positionals: vec![],
+            options: vec![],
+            flags: vec![],
+        };
+        
+        // Should be filtered because base command "anvil" is forbidden
+        assert!(!FoundryExecutor::is_tool_allowed(&tool, &config));
+    }
+
+    #[test]
+    fn test_is_tool_allowed_exact_match() {
+        let config = Config {
+            forbidden_commands: vec!["forge_script".to_string()],
+            forbidden_flags: vec![],
+            allow_dangerous: true,
+        };
+        
+        let tool = ToolSchema {
+            name: "forge_script".to_string(),
+            description: "Run script".to_string(),
+            positionals: vec![],
+            options: vec![],
+            flags: vec![],
+        };
+        
+        // Should be filtered by exact name match
+        assert!(!FoundryExecutor::is_tool_allowed(&tool, &config));
+    }
+
+    #[test]
+    fn test_map_type_conversions() {
+        assert_eq!(FoundryExecutor::map_type("boolean"), "boolean");
+        assert_eq!(FoundryExecutor::map_type("number"), "number");
+        assert_eq!(FoundryExecutor::map_type("string"), "string");
+        assert_eq!(FoundryExecutor::map_type("path"), "string");
+        assert_eq!(FoundryExecutor::map_type("array"), "array");
+        assert_eq!(FoundryExecutor::map_type("unknown"), "string");
+    }
+
+    #[test]
+    fn test_value_to_string_conversions() {
+        use serde_json::json;
+        
+        assert_eq!(
+            FoundryExecutor::value_to_string(&json!("test")),
+            Some("test".to_string())
+        );
+        assert_eq!(
+            FoundryExecutor::value_to_string(&json!(42)),
+            Some("42".to_string())
+        );
+        assert_eq!(
+            FoundryExecutor::value_to_string(&json!(3.14)),
+            Some("3.14".to_string())
+        );
+        assert_eq!(
+            FoundryExecutor::value_to_string(&json!(100u64)),
+            Some("100".to_string())
+        );
+    }
+
+    #[test]
+    fn test_value_to_string_invalid_types() {
+        use serde_json::json;
+        
+        // Objects and arrays should not convert
+        assert!(FoundryExecutor::value_to_string(&json!({"key": "value"})).is_none());
+        assert!(FoundryExecutor::value_to_string(&json!([1, 2, 3])).is_none());
+        assert!(FoundryExecutor::value_to_string(&json!(null)).is_none());
+    }
+
+    #[test]
+    fn test_schema_to_tool_includes_all_parameters() {
+        let schema = ToolSchema {
+            name: "test_tool".to_string(),
+            description: "Test tool".to_string(),
+            positionals: vec![
+                PositionalSchema {
+                    name: "arg1".to_string(),
+                    param_type: "string".to_string(),
+                    description: "First arg".to_string(),
+                    required: true,
+                    index: Some(0),
+                },
+            ],
+            options: vec![
+                OptionSchema {
+                    name: "option1".to_string(),
+                    param_type: "string".to_string(),
+                    description: "Option 1".to_string(),
+                    required: false,
+                    short: None,
+                    value_name: None,
+                    default: Some(serde_json::json!("default_value")),
+                },
+            ],
+            flags: vec![
+                FlagSchema {
+                    name: "flag1".to_string(),
+                    param_type: "boolean".to_string(),
+                    description: "Flag 1".to_string(),
+                    required: false,
+                    short: None,
+                },
+            ],
+        };
+        
+        let context = ContextConfig::default();
+        let config = Config::default();
+        let tool = FoundryExecutor::schema_to_tool(&schema, &config, &context);
+        
+        assert_eq!(tool.name, "test_tool");
+        
+        let properties = tool.input_schema.get("properties").unwrap().as_object().unwrap();
+        assert!(properties.contains_key("arg1"));
+        assert!(properties.contains_key("option1"));
+        assert!(properties.contains_key("flag1"));
+        
+        // Check that default value is included
+        let option1 = properties.get("option1").unwrap();
+        assert_eq!(
+            option1.get("default").unwrap().as_str().unwrap(),
+            "default_value"
+        );
+        
+        // Check required fields
+        let required = tool.input_schema.get("required").unwrap().as_array().unwrap();
+        assert_eq!(required.len(), 1);
+        assert_eq!(required[0].as_str().unwrap(), "arg1");
+    }
+
+    #[test]
+    fn test_execute_tool_requires_valid_tool_name() {
+        let schema = create_test_schema();
+        let executor = FoundryExecutor::new(schema);
+        
+        let result = executor.execute_tool("nonexistent_tool", &None);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    #[test]
+    fn test_get_command_path_with_bin_path() {
+        let schema = SchemaFile { tools: vec![] };
+        let mut executor = FoundryExecutor::new(schema);
+        
+        // Manually set the bin path for testing
+        executor.foundry_bin_path = Some("/test/bin".to_string());
+        
+        let path = executor.get_command_path("forge");
+        assert_eq!(path, "/test/bin/forge");
+    }
+
+    #[test]
+    fn test_get_command_path_without_bin_path() {
+        let schema = SchemaFile { tools: vec![] };
+        let mut executor = FoundryExecutor::new(schema);
+        executor.foundry_bin_path = None;
+        
+        let path = executor.get_command_path("forge");
+        assert_eq!(path, "forge");
+    }
+
+    #[test]
+    fn test_safe_default_prevents_dangerous_tools() {
+        let schema = create_test_schema();
+        // Use safe_default which has all dangerous restrictions
+        let config = Config::safe_default();
+        let executor = FoundryExecutor::with_config(schema, config);
+        
+        // Verify dangerous commands are filtered
+        assert!(executor.tools.get("anvil").is_none());
+        
+        // Verify dangerous flags are filtered from remaining tools
+        if let Some(cast_tool) = executor.tools.get("cast_call") {
+            let has_broadcast_flag = cast_tool.flags.iter().any(|f| f.name == "broadcast");
+            let has_private_key_option = cast_tool.options.iter().any(|o| o.name == "private-key");
+            
+            // These should not be present in the schema
+            assert!(!has_broadcast_flag, "broadcast flag should be filtered");
+            assert!(!has_private_key_option, "private-key option should be filtered");
+        }
+    }
+
+    #[test]
+    fn test_tool_list_only_contains_allowed_tools() {
+        let schema = create_test_schema();
+        let config = Config {
+            forbidden_commands: vec!["cast_call".to_string()],
+            forbidden_flags: vec![],
+            allow_dangerous: true,
+        };
+        
+        let executor = FoundryExecutor::with_config(schema, config);
+        let tool_list = executor.tool_list();
+        
+        // cast_call should not be in the list
+        assert!(!tool_list.iter().any(|t| t.name == "cast_call"));
+        
+        // Other allowed tools should be present
+        assert!(tool_list.iter().any(|t| t.name == "forge_build"));
+    }
+}
