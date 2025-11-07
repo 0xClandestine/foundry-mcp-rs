@@ -284,7 +284,7 @@ mod tests {
 
         let opt: OptionSchema = serde_json::from_str(json).unwrap();
         assert!(opt.default.is_some());
-        
+
         let default_val = opt.default.unwrap();
         assert!(default_val.is_object());
         assert_eq!(default_val["key"], "value");
@@ -304,7 +304,7 @@ mod tests {
 
         let json = serde_json::to_string(&pos).unwrap();
         let deserialized: PositionalSchema = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.name, pos.name);
         assert_eq!(deserialized.param_type, pos.param_type);
         assert_eq!(deserialized.required, pos.required);
@@ -324,7 +324,7 @@ mod tests {
 
         let json = serde_json::to_string(&tool).unwrap();
         let deserialized: ToolSchema = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.name, tool.name);
         assert_eq!(deserialized.description, tool.description);
     }
@@ -334,10 +334,10 @@ mod tests {
     fn test_type_field_renamed_correctly() {
         let json = r#"{"name": "test", "type": "string", "description": "desc", "required": true}"#;
         let pos: PositionalSchema = serde_json::from_str(json).unwrap();
-        
+
         // "type" in JSON should map to "param_type" in struct
         assert_eq!(pos.param_type, "string");
-        
+
         // When serialized, it should be "type" again
         let serialized = serde_json::to_value(&pos).unwrap();
         assert!(serialized.get("type").is_some());
@@ -348,7 +348,7 @@ mod tests {
     #[test]
     fn test_param_types_variety() {
         let types = vec!["string", "number", "boolean", "array", "path", "object"];
-        
+
         for param_type in types {
             let json = format!(
                 r#"{{"name": "test", "type": "{}", "description": "desc", "required": false}}"#,
