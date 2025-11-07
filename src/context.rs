@@ -57,6 +57,7 @@ mod tests {
     use std::fs;
     use tempfile::TempDir;
 
+    /// Test that default ContextConfig has no custom descriptions
     #[test]
     fn test_default_context_is_empty() {
         let ctx = ContextConfig::default();
@@ -65,6 +66,7 @@ mod tests {
         assert!(ctx.positionals.is_empty());
     }
 
+    /// Test that custom tool descriptions are appended to original descriptions
     #[test]
     fn test_tool_description_with_context() {
         let mut ctx = ContextConfig::default();
@@ -79,6 +81,7 @@ mod tests {
         assert!(result.contains("\n\n")); // Should have separator
     }
 
+    /// Test that tools without custom context return original description
     #[test]
     fn test_tool_description_without_context() {
         let ctx = ContextConfig::default();
@@ -86,6 +89,7 @@ mod tests {
         assert_eq!(result, "Build the project");
     }
 
+    /// Test that custom flag descriptions are appended to original descriptions
     #[test]
     fn test_flag_description_with_context() {
         let mut ctx = ContextConfig::default();
@@ -99,6 +103,7 @@ mod tests {
         assert!(result.contains("Use our company RPC: https://rpc.example.com"));
     }
 
+    /// Test that flags without custom context return original description
     #[test]
     fn test_flag_description_without_context() {
         let ctx = ContextConfig::default();
@@ -106,6 +111,7 @@ mod tests {
         assert_eq!(result, "RPC endpoint URL");
     }
 
+    /// Test that custom positional descriptions are appended to original descriptions
     #[test]
     fn test_positional_description_with_context() {
         let mut ctx = ContextConfig::default();
@@ -119,6 +125,7 @@ mod tests {
         assert!(result.contains("Deploy to our testnet first"));
     }
 
+    /// Test that positionals without custom context return original description
     #[test]
     fn test_positional_description_without_context() {
         let ctx = ContextConfig::default();
@@ -126,6 +133,7 @@ mod tests {
         assert_eq!(result, "Contract to deploy");
     }
 
+    /// Test that loading from missing context.json returns empty config without error
     #[test]
     fn test_load_missing_file_returns_default() {
         // Change to a temp directory where context.json doesn't exist
@@ -144,6 +152,7 @@ mod tests {
         std::env::set_current_dir(original_dir).unwrap();
     }
 
+    /// Test that valid context.json file is correctly parsed
     #[test]
     fn test_from_file_valid_json() {
         let temp_dir = TempDir::new().unwrap();
@@ -175,6 +184,7 @@ mod tests {
         );
     }
 
+    /// Test that invalid JSON returns an error
     #[test]
     fn test_from_file_invalid_json() {
         let temp_dir = TempDir::new().unwrap();
@@ -186,12 +196,14 @@ mod tests {
         assert!(result.is_err());
     }
 
+    /// Test that loading from nonexistent file returns an error
     #[test]
     fn test_from_file_missing_file() {
         let result = ContextConfig::from_file("/nonexistent/path/context.json");
         assert!(result.is_err());
     }
 
+    /// Test that descriptions without context remain unchanged
     #[test]
     fn test_context_preserves_original_when_no_injection() {
         let ctx = ContextConfig::default();
@@ -206,6 +218,7 @@ mod tests {
         assert_eq!(pos_desc, "Original arg description");
     }
 
+    /// Test that empty context strings still add separator
     #[test]
     fn test_context_with_empty_string_injection() {
         let mut ctx = ContextConfig::default();
@@ -216,6 +229,7 @@ mod tests {
         assert_eq!(result, "Original\n\n");
     }
 
+    /// Test that special characters in context are preserved
     #[test]
     fn test_context_special_characters_in_descriptions() {
         let mut ctx = ContextConfig::default();
@@ -228,6 +242,7 @@ mod tests {
         assert!(result.contains("Special chars: <>&\"'`$()[]{}\\"));
     }
 
+    /// Test that multiline context descriptions work correctly
     #[test]
     fn test_context_multiline_injection() {
         let mut ctx = ContextConfig::default();
@@ -239,6 +254,7 @@ mod tests {
         assert!(result.starts_with("Config file\n\n"));
     }
 
+    /// Test that extra JSON fields are ignored during deserialization
     #[test]
     fn test_deserialize_with_extra_fields() {
         let json = r#"{
@@ -256,6 +272,7 @@ mod tests {
         assert_eq!(ctx.positionals.len(), 1);
     }
 
+    /// Test that missing optional fields use defaults during deserialization
     #[test]
     fn test_deserialize_with_missing_fields() {
         // All fields are optional with #[serde(default)]

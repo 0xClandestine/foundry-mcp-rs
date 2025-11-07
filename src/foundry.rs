@@ -483,6 +483,7 @@ mod tests {
         }
     }
 
+    /// Test that basic tool names are correctly parsed into subcommands
     #[test]
     fn test_parse_subcommand_parts_basic() {
         let parts = vec!["forge", "build"];
@@ -491,6 +492,7 @@ mod tests {
         assert!(!has_triple);
     }
 
+    /// Test that multi-part tool names are joined with hyphens
     #[test]
     fn test_parse_subcommand_parts_with_hyphen() {
         let parts = vec!["forge", "clean", "cache"];
@@ -499,6 +501,7 @@ mod tests {
         assert!(!has_triple);
     }
 
+    /// Test that triple underscores in tool names convert to flag syntax
     #[test]
     fn test_parse_subcommand_parts_with_triple_underscore() {
         let parts = vec!["cast", "block", "", "", "number"];
@@ -507,6 +510,7 @@ mod tests {
         assert!(has_triple);
     }
 
+    /// Test that tool names with only the base command return empty subcommands
     #[test]
     fn test_parse_subcommand_parts_empty() {
         let parts = vec!["forge"];
@@ -515,6 +519,7 @@ mod tests {
         assert!(!has_triple);
     }
 
+    /// Test that default config automatically filters dangerous commands like anvil
     #[test]
     fn test_default_executor_filters_dangerous_commands() {
         let schema = create_test_schema();
@@ -530,6 +535,7 @@ mod tests {
         assert!(executor.tools.get("cast_call").is_some());
     }
 
+    /// Test that custom config can forbid specific commands while allowing dangerous ones
     #[test]
     fn test_executor_with_custom_config_filters_commands() {
         let schema = create_test_schema();
@@ -551,6 +557,7 @@ mod tests {
         assert!(executor.tools.get("cast_call").is_some());
     }
 
+    /// Test that forbidden flags are properly filtered from tool schemas
     #[test]
     fn test_executor_filters_forbidden_flags() {
         let schema = create_test_schema();
@@ -583,6 +590,7 @@ mod tests {
         assert!(!properties.contains_key("private-key"));
     }
 
+    /// Test that tools with forbidden base commands are filtered (e.g. anvil_fork when anvil is forbidden)
     #[test]
     fn test_is_tool_allowed_filters_base_command() {
         let config = Config {
@@ -603,6 +611,7 @@ mod tests {
         assert!(!FoundryExecutor::is_tool_allowed(&tool, &config));
     }
 
+    /// Test that tools matching exact forbidden command names are filtered
     #[test]
     fn test_is_tool_allowed_exact_match() {
         let config = Config {
@@ -623,6 +632,7 @@ mod tests {
         assert!(!FoundryExecutor::is_tool_allowed(&tool, &config));
     }
 
+    /// Test that parameter types are correctly mapped to JSON schema types
     #[test]
     fn test_map_type_conversions() {
         assert_eq!(FoundryExecutor::map_type("boolean"), "boolean");
@@ -633,6 +643,7 @@ mod tests {
         assert_eq!(FoundryExecutor::map_type("unknown"), "string");
     }
 
+    /// Test that JSON values are correctly converted to strings for CLI arguments
     #[test]
     fn test_value_to_string_conversions() {
         use serde_json::json;
@@ -655,6 +666,7 @@ mod tests {
         );
     }
 
+    /// Test that complex JSON values (objects, arrays, null) return None for string conversion
     #[test]
     fn test_value_to_string_invalid_types() {
         use serde_json::json;
@@ -665,6 +677,7 @@ mod tests {
         assert!(FoundryExecutor::value_to_string(&json!(null)).is_none());
     }
 
+    /// Test that schema_to_tool correctly includes positionals, options, flags, defaults, and required fields
     #[test]
     fn test_schema_to_tool_includes_all_parameters() {
         let schema = ToolSchema {
@@ -729,6 +742,7 @@ mod tests {
         assert_eq!(required[0].as_str().unwrap(), "arg1");
     }
 
+    /// Test that executing a nonexistent tool returns an error
     #[test]
     fn test_execute_tool_requires_valid_tool_name() {
         let schema = create_test_schema();
@@ -739,6 +753,7 @@ mod tests {
         assert!(result.unwrap_err().to_string().contains("not found"));
     }
 
+    /// Test that command path includes bin directory when foundry bin path is set
     #[test]
     fn test_get_command_path_with_bin_path() {
         let schema = SchemaFile { tools: vec![] };
@@ -751,6 +766,7 @@ mod tests {
         assert_eq!(path, "/test/bin/forge");
     }
 
+    /// Test that command path uses just the command name when no bin path is set
     #[test]
     fn test_get_command_path_without_bin_path() {
         let schema = SchemaFile { tools: vec![] };
@@ -761,6 +777,7 @@ mod tests {
         assert_eq!(path, "forge");
     }
 
+    /// Test that safe_default config filters dangerous commands and flags from MCP tool list
     #[test]
     fn test_safe_default_prevents_dangerous_tools() {
         let schema = create_test_schema();
@@ -807,6 +824,7 @@ mod tests {
         }
     }
 
+    /// Test that tool_list only includes tools that pass the forbidden command filter
     #[test]
     fn test_tool_list_only_contains_allowed_tools() {
         let schema = create_test_schema();
