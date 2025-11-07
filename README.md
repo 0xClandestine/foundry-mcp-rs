@@ -4,10 +4,11 @@ A Model Context Protocol (MCP) server that provides access to all Foundry CLI to
 
 ## Features
 
-- 🔧 **177 Tools**: Complete access to all Foundry commands + blockchain RPC discovery + token information
+- 🔧 **184 Tools**: Complete access to all Foundry commands + blockchain RPC discovery + token information + session management
 - 🚀 **Fast**: Minimal overhead, shells out to native Foundry binaries
 - 📋 **Full Schema Support**: Handles positionals, options, and flags
 - 🔌 **MCP Protocol**: Standard stdio-based MCP server implementation
+- 🎯 **Session Management**: Start/stop Anvil nodes and Chisel REPL sessions as background processes
 - 🌐 **RPC Discovery**: Query 2400+ blockchain networks and their RPC endpoints from chainlist.org
 - 🔍 **Chain Search**: Find networks by name, symbol, or chain ID
 - 📊 **Network Info**: Access faucets, explorers, and network metadata
@@ -21,8 +22,21 @@ A Model Context Protocol (MCP) server that provides access to all Foundry CLI to
 ### Foundry Tools (170)
 - **forge** (44): build, test, script, verify, coverage, snapshot, init, config, etc.
 - **cast** (119): call, send, receipt, wallet, storage, decode, block, tx, etc.
-- **anvil** (1): local Ethereum development node
-- **chisel** (6): Solidity REPL
+- **anvil** (1): local Ethereum development node _(interactive blocked, use session tools below)_
+- **chisel** (6): Solidity REPL _(interactive blocked, use session tools below)_
+
+### Session Management Tools (7)
+
+**Anvil Session Management** - Control background Anvil instances:
+- `anvil_session_start` - Start Anvil as a background process (fork, custom port, accounts, block time)
+- `anvil_session_stop` - Stop the running Anvil instance
+- `anvil_session_status` - Check if Anvil is running and get connection details
+
+**Chisel Session Management** - Persistent REPL with state:
+- `chisel_session_start` - Start a Chisel REPL session
+- `chisel_session_eval` - Execute Solidity code (state persists across calls!)
+- `chisel_session_stop` - Stop the Chisel session
+- `chisel_session_status` - Check if Chisel is running
 
 ### Blockchain RPC Tools (3)
 
@@ -173,10 +187,11 @@ foundry-mcp --help
 ## How It Works
 
 1. Loads Foundry CLI schemas from `schemas.json`
-2. Exposes 170 Foundry tools + 3 RPC discovery tools + 4 token information tools via MCP
+2. Exposes 170 Foundry tools + 3 RPC discovery tools + 4 token information tools + 7 session management tools via MCP
 3. Shells out to native Foundry binaries for execution
-4. Fetches blockchain RPC data from chainlist.org (cached)
-5. Fetches token information from Optimism token list (cached)
+4. Manages background processes for Anvil and Chisel sessions
+5. Fetches blockchain RPC data from chainlist.org (cached)
+6. Fetches token information from Optimism token list (cached)
 
 ## Architecture
 

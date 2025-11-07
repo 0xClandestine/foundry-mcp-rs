@@ -8,8 +8,10 @@ pub mod chainlist;
 pub mod config;
 pub mod context;
 pub mod foundry;
+pub mod handlers;
 pub mod schema;
 pub mod server;
+pub mod sessions;
 pub mod tokenlist;
 
 pub use server::FoundryMcpHandler;

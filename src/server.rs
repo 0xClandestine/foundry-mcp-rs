@@ -10,6 +10,7 @@ use std::sync::Arc;
 
 use crate::chainlist::{self, fetch_chainlist};
 use crate::foundry::FoundryExecutor;
+use crate::handlers;
 use crate::tokenlist;
 
 /// MCP server handler
@@ -70,6 +71,9 @@ impl ServerHandler for FoundryMcpHandler {
 
         // Add tokenlist tools
         tools.extend(tokenlist::get_tokenlist_tools());
+
+        // Add session management tools
+        tools.extend(handlers::get_session_tools());
 
         Ok(ListToolsResult {
             tools,
@@ -211,6 +215,36 @@ impl ServerHandler for FoundryMcpHandler {
                 let empty_map = serde_json::Map::new();
                 let args = request.arguments.as_ref().unwrap_or(&empty_map);
                 return tokenlist::handle_list_supported_chains(args).await;
+            }
+            // Handle session management tools
+            "anvil_session_start" => {
+                return handlers::handle_anvil_session_start(
+                    &request.arguments,
+                    self.foundry_bin_path(),
+                )
+                .await;
+            }
+            "anvil_session_stop" => {
+                return handlers::handle_anvil_session_stop().await;
+            }
+            "anvil_session_status" => {
+                return handlers::handle_anvil_session_status().await;
+            }
+            "chisel_session_start" => {
+                return handlers::handle_chisel_session_start(self.foundry_bin_path()).await;
+            }
+            "chisel_session_eval" => {
+                return handlers::handle_chisel_session_eval(
+                    &request.arguments,
+                    self.foundry_bin_path(),
+                )
+                .await;
+            }
+            "chisel_session_stop" => {
+                return handlers::handle_chisel_session_stop().await;
+            }
+            "chisel_session_status" => {
+                return handlers::handle_chisel_session_status().await;
             }
             _ => {}
         }
