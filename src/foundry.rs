@@ -110,10 +110,55 @@ impl FoundryExecutor {
         &self.foundry_bin_path
     }
 
+    /// Check if a tool is a cast conversion command (replaced by unified cast_convert tool)
+    fn is_cast_conversion_command(tool_name: &str) -> bool {
+        matches!(
+            tool_name,
+            "cast_max_int"
+                | "cast_min_int"
+                | "cast_max_uint"
+                | "cast_address_zero"
+                | "cast_hash_zero"
+                | "cast_from_utf8"
+                | "cast_concat_hex"
+                | "cast_from_bin"
+                | "cast_to_hexdata"
+                | "cast_to_check_sum_address"
+                | "cast_to_ascii"
+                | "cast_to_utf8"
+                | "cast_from_fixed_point"
+                | "cast_to_bytes32"
+                | "cast_to_fixed_point"
+                | "cast_to_uint256"
+                | "cast_to_int256"
+                | "cast_shl"
+                | "cast_shr"
+                | "cast_to_unit"
+                | "cast_parse_units"
+                | "cast_format_units"
+                | "cast_to_wei"
+                | "cast_from_wei"
+                | "cast_to_rlp"
+                | "cast_from_rlp"
+                | "cast_to_hex"
+                | "cast_to_dec"
+                | "cast_to_base"
+        )
+    }
+
     /// Check if a tool is allowed based on configuration.
     ///
     /// Returns `false` if the tool name or its base command is forbidden.
     fn is_tool_allowed(tool: &ToolSchema, config: &Config) -> bool {
+        // Filter out individual cast conversion commands (replaced by unified cast_convert)
+        if Self::is_cast_conversion_command(&tool.name) {
+            eprintln!(
+                "🔄 Filtering out conversion command (use cast_convert): {}",
+                tool.name
+            );
+            return false;
+        }
+
         // Check if the full tool name is forbidden
         if config.is_command_forbidden(&tool.name) {
             eprintln!("🚫 Filtering out forbidden command: {}", tool.name);
@@ -848,5 +893,74 @@ mod tests {
 
         // Other allowed tools should be present
         assert!(tool_list.iter().any(|t| t.name == "forge_build"));
+    }
+
+    /// Test that cast conversion commands are filtered out (replaced by unified cast_convert)
+    #[test]
+    fn test_conversion_commands_filtered() {
+        // Create schema with conversion commands
+        let schema = SchemaFile {
+            tools: vec![
+                ToolSchema {
+                    name: "cast_to_hex".to_string(),
+                    description: "Convert to hex".to_string(),
+                    positionals: vec![],
+                    options: vec![],
+                    flags: vec![],
+                },
+                ToolSchema {
+                    name: "cast_to_wei".to_string(),
+                    description: "Convert to wei".to_string(),
+                    positionals: vec![],
+                    options: vec![],
+                    flags: vec![],
+                },
+                ToolSchema {
+                    name: "cast_max_int".to_string(),
+                    description: "Max int".to_string(),
+                    positionals: vec![],
+                    options: vec![],
+                    flags: vec![],
+                },
+                ToolSchema {
+                    name: "cast_call".to_string(), // Not a conversion command
+                    description: "Call contract".to_string(),
+                    positionals: vec![],
+                    options: vec![],
+                    flags: vec![],
+                },
+            ],
+        };
+
+        let config = Config::default();
+        let executor = FoundryExecutor::with_config(schema, config);
+        let tool_list = executor.tool_list();
+
+        // Conversion commands should be filtered out
+        assert!(!tool_list.iter().any(|t| t.name == "cast_to_hex"));
+        assert!(!tool_list.iter().any(|t| t.name == "cast_to_wei"));
+        assert!(!tool_list.iter().any(|t| t.name == "cast_max_int"));
+
+        // Non-conversion cast commands should remain
+        assert!(tool_list.iter().any(|t| t.name == "cast_call"));
+    }
+
+    /// Test that is_cast_conversion_command correctly identifies conversion commands
+    #[test]
+    fn test_is_cast_conversion_command() {
+        // Should identify conversion commands
+        assert!(FoundryExecutor::is_cast_conversion_command("cast_to_hex"));
+        assert!(FoundryExecutor::is_cast_conversion_command("cast_to_wei"));
+        assert!(FoundryExecutor::is_cast_conversion_command(
+            "cast_from_utf8"
+        ));
+        assert!(FoundryExecutor::is_cast_conversion_command("cast_max_int"));
+        assert!(FoundryExecutor::is_cast_conversion_command("cast_to_rlp"));
+
+        // Should not identify non-conversion commands
+        assert!(!FoundryExecutor::is_cast_conversion_command("cast_call"));
+        assert!(!FoundryExecutor::is_cast_conversion_command("cast_send"));
+        assert!(!FoundryExecutor::is_cast_conversion_command("forge_build"));
+        assert!(!FoundryExecutor::is_cast_conversion_command("anvil"));
     }
 }

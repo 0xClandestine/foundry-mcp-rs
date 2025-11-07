@@ -4,7 +4,7 @@ A Model Context Protocol (MCP) server that provides access to all Foundry CLI to
 
 ## Features
 
-- 🔧 **184 Tools**: Complete access to all Foundry commands + blockchain RPC discovery + token information + session management
+- 🛠️ **Comprehensive Support**: Full access to all Foundry commands, blockchain RPC discovery, token information, session management, and a unified conversion tool—all in one place
 - 🚀 **Fast**: Minimal overhead, shells out to native Foundry binaries
 - 📋 **Full Schema Support**: Handles positionals, options, and flags
 - 🔌 **MCP Protocol**: Standard stdio-based MCP server implementation
@@ -15,14 +15,15 @@ A Model Context Protocol (MCP) server that provides access to all Foundry CLI to
 - 🪙 **Token Information**: Search and discover ERC20 tokens across Ethereum and L2 chains
 - 🔎 **Token Search**: Find tokens by name, symbol, or contract address
 - 🌉 **Bridge Info**: Access cross-chain token bridge information
+- 🔄 **Unified Conversions**: Single tool for all cast conversion operations (hex, decimal, base, ETH units, text encoding, RLP, etc.)
 - 🔒 **Security**: Configurable forbidden commands and flags to prevent dangerous operations
 
 ## Available Tools
 
-### Foundry Tools (170)
-- **forge** (44): build, test, script, verify, coverage, snapshot, init, config, etc.
-- **cast** (119): call, send, receipt, wallet, storage, decode, block, tx, etc.
-- **anvil** (1): local Ethereum development node _(interactive blocked, use session tools below)_
+### Foundry Tools
+- **forge**: build, test, script, verify, coverage, snapshot, init, config, etc.
+- **cast**: call, send, receipt, wallet, storage, decode, block, tx, etc.
+- **anvil**: local Ethereum development node _(interactive blocked, use session tools below)_
 - **chisel** (6): Solidity REPL _(interactive blocked, use session tools below)_
 
 ### Session Management Tools (7)
