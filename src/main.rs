@@ -73,3 +73,202 @@ fn log_config_status(config: &Config) {
         eprintln!("🔒 Forbidden flags: {:?}", config.forbidden_flags);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    /// Test that config logging doesn't panic when restrictions are present
+    #[test]
+    fn test_log_config_status_with_restrictions() {
+        let config = Config {
+            forbidden_commands: vec!["anvil".to_string()],
+            forbidden_flags: vec!["broadcast".to_string()],
+            allow_dangerous: false,
+        };
+
+        // Should not panic
+        log_config_status(&config);
+    }
+
+    /// Test that config logging doesn't panic when no restrictions are present
+    #[test]
+    fn test_log_config_status_empty() {
+        let config = Config {
+            forbidden_commands: vec![],
+            forbidden_flags: vec![],
+            allow_dangerous: true,
+        };
+
+        // Should not panic
+        log_config_status(&config);
+    }
+
+    /// Test that CLI parses correctly without any arguments
+    #[test]
+    fn test_cli_parsing() {
+        // Test that CLI can be parsed
+        let cli = Cli::parse_from(&["foundry-mcp"]);
+        assert!(cli.config.is_none());
+    }
+
+    /// Test that CLI correctly parses --config flag with path argument
+    #[test]
+    fn test_cli_with_config_path() {
+        let cli = Cli::parse_from(&["foundry-mcp", "--config", "/path/to/config.json"]);
+        assert_eq!(cli.config, Some("/path/to/config.json".to_string()));
+    }
+
+    /// Test that CLI correctly parses short -c flag with path argument
+    #[test]
+    fn test_cli_with_short_config_flag() {
+        let cli = Cli::parse_from(&["foundry-mcp", "-c", "/path/to/config.json"]);
+        assert_eq!(cli.config, Some("/path/to/config.json".to_string()));
+    }
+
+    /// Test that embedded schemas.json file is valid and contains tools
+    #[test]
+    fn test_embedded_schema_is_valid_json() {
+        const SCHEMA_JSON: &str = include_str!("../schemas.json");
+
+        // Should parse without errors
+        let result: Result<SchemaFile, _> = serde_json::from_str(SCHEMA_JSON);
+        assert!(result.is_ok(), "Embedded schema should be valid JSON");
+
+        let schema = result.unwrap();
+        assert!(!schema.tools.is_empty(), "Schema should contain tools");
+    }
+
+    /// Test that config can be loaded from a valid JSON file
+    #[test]
+    fn test_config_loading_with_valid_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("test_config.json");
+
+        let config_json = r#"{
+            "forbidden_commands": ["test_command"],
+            "forbidden_flags": ["test_flag"],
+            "allow_dangerous": false
+        }"#;
+
+        fs::write(&config_path, config_json).unwrap();
+
+        let config = Config::from_file(&config_path).unwrap();
+        assert!(config
+            .forbidden_commands
+            .contains(&"test_command".to_string()));
+        assert!(config.forbidden_flags.contains(&"test_flag".to_string()));
+    }
+
+    /// Test that loading config from invalid path returns an error
+    #[test]
+    fn test_config_loading_with_invalid_file() {
+        let result = Config::from_file("/nonexistent/path/config.json");
+        assert!(result.is_err());
+    }
+
+    /// Test that config loading automatically applies dangerous restrictions when allow_dangerous is false
+    #[test]
+    fn test_config_loading_applies_dangerous_restrictions() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("config.json");
+
+        let config_json = r#"{
+            "forbidden_commands": [],
+            "forbidden_flags": [],
+            "allow_dangerous": false
+        }"#;
+
+        fs::write(&config_path, config_json).unwrap();
+
+        let config = Config::from_file(&config_path).unwrap();
+
+        // Should have dangerous restrictions applied automatically
+        assert!(!config.forbidden_commands.is_empty());
+        assert!(!config.forbidden_flags.is_empty());
+        assert!(config.forbidden_commands.contains(&"anvil".to_string()));
+        assert!(config.forbidden_flags.contains(&"broadcast".to_string()));
+    }
+
+    /// Test that executor can be successfully created from embedded schema
+    #[test]
+    fn test_executor_creation_with_schema() {
+        const SCHEMA_JSON: &str = include_str!("../schemas.json");
+        let schema_file: SchemaFile = serde_json::from_str(SCHEMA_JSON).unwrap();
+        let config = Config::default();
+
+        // Should create executor without panic
+        let executor = FoundryExecutor::with_config(schema_file, config);
+
+        // Executor should be created successfully with a tool list
+        let _tool_list = executor.tool_list();
+        // The tool list exists and can be accessed (no panic)
+    }
+
+    /// Test the complete initialization workflow from schema to handler
+    #[test]
+    fn test_handler_creation_workflow() {
+        const SCHEMA_JSON: &str = include_str!("../schemas.json");
+        let schema_file: SchemaFile = serde_json::from_str(SCHEMA_JSON).unwrap();
+        let config = Config::default();
+
+        let executor = FoundryExecutor::with_config(schema_file, config);
+        let _handler = FoundryMcpHandler::new(executor);
+
+        // Should create handler successfully
+    }
+
+    /// Test that default config includes security restrictions
+    #[test]
+    fn test_default_config_has_security_restrictions() {
+        let config = Config::load_default();
+
+        // Default config should have dangerous restrictions
+        assert!(!config.forbidden_commands.is_empty() || !config.allow_dangerous);
+        assert!(!config.forbidden_flags.is_empty() || !config.allow_dangerous);
+    }
+
+    /// Test that user-provided config file overrides default restrictions
+    #[test]
+    fn test_config_from_file_overrides_defaults() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("custom_config.json");
+
+        let config_json = r#"{
+            "forbidden_commands": ["custom_command"],
+            "forbidden_flags": [],
+            "allow_dangerous": true
+        }"#;
+
+        fs::write(&config_path, config_json).unwrap();
+
+        let config = Config::from_file(&config_path).unwrap();
+
+        // Should use custom config
+        assert!(config
+            .forbidden_commands
+            .contains(&"custom_command".to_string()));
+        assert!(config.allow_dangerous);
+
+        // Should NOT have default dangerous restrictions (allow_dangerous = true)
+        assert!(!config.forbidden_commands.contains(&"anvil".to_string()));
+    }
+
+    /// Test that safe_default config prevents all dangerous operations
+    #[test]
+    fn test_safe_default_prevents_dangerous_operations() {
+        let config = Config::safe_default();
+
+        // Should forbid dangerous commands
+        assert!(config.forbidden_commands.contains(&"anvil".to_string()));
+
+        // Should forbid dangerous flags
+        assert!(config.forbidden_flags.contains(&"broadcast".to_string()));
+        assert!(config.forbidden_flags.contains(&"private-key".to_string()));
+
+        // Should not allow dangerous operations
+        assert!(!config.allow_dangerous);
+    }
+}

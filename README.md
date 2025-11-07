@@ -26,21 +26,9 @@ A Model Context Protocol (MCP) server that provides access to all Foundry CLI to
 
 ### Blockchain RPC Tools (3)
 
-**`get_rpc`** - Get RPC endpoints for any chain with filtering (open-source, no-tracking, websocket/http, limit)  
+**`search_rpc_url`** - Search for RPC endpoints for any chain with filtering (open-source, no-tracking, websocket/http, limit)  
 **`search_chains`** - Search networks by name, symbol, or chain ID  
 **`list_popular_chains`** - Quick access to popular networks (Ethereum, Polygon, Arbitrum, etc.)
-
-**Example:**
-```json
-{
-  "name": "get_rpc",
-  "arguments": {
-    "chain": "ethereum",
-    "no_tracking": true,
-    "limit": 5
-  }
-}
-```
 
 ### Token Information Tools (4)
 
@@ -159,58 +147,9 @@ When `allow_dangerous: false` (the default), the following hardcoded restriction
 
 **Note:** Your custom `forbidden_commands` and `forbidden_flags` are merged with these hardcoded values, so you can add additional restrictions without needing to repeat the defaults.
 
-### Example Configurations
-
-**Permissive (no restrictions)**:
-```bash
-cp config.example.json ~/.foundry-mcp-config.json
-# Sets allow_dangerous: true - no restrictions at all
-```
-
-**Safe (recommended)**:
-```bash
-cp config.safe.json ~/.foundry-mcp-config.json
-# Uses hardcoded dangerous restrictions only
-```
-
-**Custom (your restrictions + hardcoded)**:
-```bash
-cp config.custom.json ~/.foundry-mcp-config.json
-# Your custom forbidden commands/flags + hardcoded dangerous ones
-```
-
-**Restrictive (read-only operations)**:
-```bash
-cp config.restrictive.json ~/.foundry-mcp-config.json
-# Blocks all write operations
-```
-
-### Common Dangerous Commands
-
-Commands you might want to forbid:
-- `anvil` - Runs a local Ethereum node
-- `forge_script` - Executes deployment scripts (especially with `--broadcast`)
-- `forge_create` - Deploys contracts to networks
-- `cast_send` - Sends transactions
-- `cast_publish` - Publishes transactions
-- `cast_mktx` - Creates and signs transactions
-- `cast_wallet_*` - Wallet operations (import, sign, etc.)
-
-### Common Dangerous Flags
-
-Flags you might want to forbid:
-- `broadcast` - Actually sends transactions to the network
-- `private-key` - Uses private key directly in command
-- `mnemonic` - Uses mnemonic phrase directly
-- `ledger` / `trezor` - Hardware wallet access
-- `interactive` - Interactive prompts (can expose secrets)
-- `password` / `password-file` - Password handling
-- `unlock` - Unlocks accounts
-- `from` - Specifies sending account
-
 ### Usage Examples
 
-**Run without restrictions**:
+**Run with default safety restrictions**:
 ```bash
 foundry-mcp
 ```
@@ -220,12 +159,7 @@ foundry-mcp
 foundry-mcp --config /path/to/config.json
 ```
 
-**Run with safe config**:
-```bash
-foundry-mcp --config ./config.safe.json
-```
-
-**Copy config to default location** (will be loaded automatically):
+**Copy config to default location** (updates systemwide defaults):
 ```bash
 cp config.safe.json ~/.foundry-mcp-config.json
 foundry-mcp
