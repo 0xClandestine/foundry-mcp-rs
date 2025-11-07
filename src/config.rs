@@ -142,7 +142,8 @@ impl Config {
     /// A vector of command names that are considered dangerous.
     pub fn get_default_dangerous_commands() -> Vec<String> {
         vec![
-            "anvil".to_string(), // Runs a local Ethereum node
+            "anvil".to_string(),  // Runs a local Ethereum node
+            "chisel".to_string(), // Opens an interactive REPL (use chisel_eval instead)
         ]
     }
 
