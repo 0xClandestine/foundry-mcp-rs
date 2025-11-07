@@ -9,6 +9,7 @@ use rmcp::{
 use std::sync::Arc;
 
 use crate::chainlist::{self, fetch_chainlist};
+use crate::conversion;
 use crate::foundry::FoundryExecutor;
 use crate::handlers;
 use crate::tokenlist;
@@ -74,6 +75,9 @@ impl ServerHandler for FoundryMcpHandler {
 
         // Add session management tools
         tools.extend(handlers::get_session_tools());
+
+        // Add unified conversion tool
+        tools.push(conversion::get_conversion_tool());
 
         Ok(ListToolsResult {
             tools,
@@ -245,6 +249,15 @@ impl ServerHandler for FoundryMcpHandler {
             }
             "chisel_session_status" => {
                 return handlers::handle_chisel_session_status().await;
+            }
+            // Handle unified conversion tool
+            "cast_convert" => {
+                let cast_path = self
+                    .foundry_bin_path()
+                    .as_ref()
+                    .map(|p| format!("{}/cast", p))
+                    .unwrap_or_else(|| "cast".to_string());
+                return conversion::handle_cast_convert(&request.arguments, &cast_path).await;
             }
             _ => {}
         }

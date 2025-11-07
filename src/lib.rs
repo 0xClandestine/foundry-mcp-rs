@@ -7,6 +7,7 @@
 pub mod chainlist;
 pub mod config;
 pub mod context;
+pub mod conversion;
 pub mod foundry;
 pub mod handlers;
 pub mod schema;
