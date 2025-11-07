@@ -31,6 +31,12 @@ pub struct SessionManager {
     sessions: HashMap<String, SessionInfo>,
 }
 
+impl Default for SessionManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SessionManager {
     /// Create a new session manager
     pub fn new() -> Self {
