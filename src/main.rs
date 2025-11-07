@@ -80,6 +80,7 @@ mod tests {
     use std::fs;
     use tempfile::TempDir;
 
+    /// Test that config logging doesn't panic when restrictions are present
     #[test]
     fn test_log_config_status_with_restrictions() {
         let config = Config {
@@ -92,6 +93,7 @@ mod tests {
         log_config_status(&config);
     }
 
+    /// Test that config logging doesn't panic when no restrictions are present
     #[test]
     fn test_log_config_status_empty() {
         let config = Config {
@@ -104,6 +106,7 @@ mod tests {
         log_config_status(&config);
     }
 
+    /// Test that CLI parses correctly without any arguments
     #[test]
     fn test_cli_parsing() {
         // Test that CLI can be parsed
@@ -111,18 +114,21 @@ mod tests {
         assert!(cli.config.is_none());
     }
 
+    /// Test that CLI correctly parses --config flag with path argument
     #[test]
     fn test_cli_with_config_path() {
         let cli = Cli::parse_from(&["foundry-mcp", "--config", "/path/to/config.json"]);
         assert_eq!(cli.config, Some("/path/to/config.json".to_string()));
     }
 
+    /// Test that CLI correctly parses short -c flag with path argument
     #[test]
     fn test_cli_with_short_config_flag() {
         let cli = Cli::parse_from(&["foundry-mcp", "-c", "/path/to/config.json"]);
         assert_eq!(cli.config, Some("/path/to/config.json".to_string()));
     }
 
+    /// Test that embedded schemas.json file is valid and contains tools
     #[test]
     fn test_embedded_schema_is_valid_json() {
         const SCHEMA_JSON: &str = include_str!("../schemas.json");
@@ -135,6 +141,7 @@ mod tests {
         assert!(!schema.tools.is_empty(), "Schema should contain tools");
     }
 
+    /// Test that config can be loaded from a valid JSON file
     #[test]
     fn test_config_loading_with_valid_file() {
         let temp_dir = TempDir::new().unwrap();
@@ -155,12 +162,14 @@ mod tests {
         assert!(config.forbidden_flags.contains(&"test_flag".to_string()));
     }
 
+    /// Test that loading config from invalid path returns an error
     #[test]
     fn test_config_loading_with_invalid_file() {
         let result = Config::from_file("/nonexistent/path/config.json");
         assert!(result.is_err());
     }
 
+    /// Test that config loading automatically applies dangerous restrictions when allow_dangerous is false
     #[test]
     fn test_config_loading_applies_dangerous_restrictions() {
         let temp_dir = TempDir::new().unwrap();
@@ -183,6 +192,7 @@ mod tests {
         assert!(config.forbidden_flags.contains(&"broadcast".to_string()));
     }
 
+    /// Test that executor can be successfully created from embedded schema
     #[test]
     fn test_executor_creation_with_schema() {
         const SCHEMA_JSON: &str = include_str!("../schemas.json");
@@ -197,6 +207,7 @@ mod tests {
         // The tool list exists and can be accessed (no panic)
     }
 
+    /// Test the complete initialization workflow from schema to handler
     #[test]
     fn test_handler_creation_workflow() {
         const SCHEMA_JSON: &str = include_str!("../schemas.json");
@@ -209,6 +220,7 @@ mod tests {
         // Should create handler successfully
     }
 
+    /// Test that default config includes security restrictions
     #[test]
     fn test_default_config_has_security_restrictions() {
         let config = Config::load_default();
@@ -218,6 +230,7 @@ mod tests {
         assert!(!config.forbidden_flags.is_empty() || !config.allow_dangerous);
     }
 
+    /// Test that user-provided config file overrides default restrictions
     #[test]
     fn test_config_from_file_overrides_defaults() {
         let temp_dir = TempDir::new().unwrap();
@@ -243,6 +256,7 @@ mod tests {
         assert!(!config.forbidden_commands.contains(&"anvil".to_string()));
     }
 
+    /// Test that safe_default config prevents all dangerous operations
     #[test]
     fn test_safe_default_prevents_dangerous_operations() {
         let config = Config::safe_default();

@@ -66,6 +66,7 @@ mod tests {
     use super::*;
     use serde_json;
 
+    /// Test that positional schema deserializes correctly with all fields
     #[test]
     fn test_positional_schema_deserialization() {
         let json = r#"{
@@ -84,6 +85,7 @@ mod tests {
         assert_eq!(pos.index, Some(0));
     }
 
+    /// Test that positional schema works without optional index field
     #[test]
     fn test_positional_schema_without_index() {
         let json = r#"{
@@ -99,6 +101,7 @@ mod tests {
         assert_eq!(pos.index, None);
     }
 
+    /// Test that option schema deserializes correctly with all optional fields
     #[test]
     fn test_option_schema_deserialization() {
         let json = r#"{
@@ -124,6 +127,7 @@ mod tests {
         );
     }
 
+    /// Test that option schema works with only required fields
     #[test]
     fn test_option_schema_with_defaults() {
         let json = r#"{
@@ -141,6 +145,7 @@ mod tests {
         assert_eq!(opt.default, None);
     }
 
+    /// Test that flag schema deserializes correctly with short flag
     #[test]
     fn test_flag_schema_deserialization() {
         let json = r#"{
@@ -159,6 +164,7 @@ mod tests {
         assert_eq!(flag.short, Some("v".to_string()));
     }
 
+    /// Test that flag schema works without optional short flag
     #[test]
     fn test_flag_schema_without_short() {
         let json = r#"{
@@ -173,6 +179,7 @@ mod tests {
         assert_eq!(flag.short, None);
     }
 
+    /// Test that complete tool schema with positionals, options, and flags deserializes correctly
     #[test]
     fn test_tool_schema_complete() {
         let json = r#"{
@@ -217,6 +224,7 @@ mod tests {
         assert_eq!(tool.flags[0].name, "force");
     }
 
+    /// Test that minimal tool schema without parameters deserializes correctly
     #[test]
     fn test_tool_schema_minimal() {
         let json = r#"{
@@ -232,6 +240,7 @@ mod tests {
         assert!(tool.flags.is_empty());
     }
 
+    /// Test that schema file with multiple tools deserializes correctly
     #[test]
     fn test_schema_file_deserialization() {
         let json = r#"{
@@ -253,6 +262,7 @@ mod tests {
         assert_eq!(schema_file.tools[1].name, "forge_test");
     }
 
+    /// Test that schema file with empty tools array deserializes correctly
     #[test]
     fn test_schema_file_empty_tools() {
         let json = r#"{"tools": []}"#;
@@ -261,6 +271,7 @@ mod tests {
         assert!(schema_file.tools.is_empty());
     }
 
+    /// Test that option defaults can contain complex nested JSON objects
     #[test]
     fn test_option_default_can_be_complex_json() {
         let json = r#"{
@@ -273,13 +284,14 @@ mod tests {
 
         let opt: OptionSchema = serde_json::from_str(json).unwrap();
         assert!(opt.default.is_some());
-
+        
         let default_val = opt.default.unwrap();
         assert!(default_val.is_object());
         assert_eq!(default_val["key"], "value");
         assert_eq!(default_val["nested"]["inner"], 42);
     }
 
+    /// Test that positional schema can be serialized and deserialized without data loss
     #[test]
     fn test_serialization_roundtrip_positional() {
         let pos = PositionalSchema {
@@ -292,13 +304,14 @@ mod tests {
 
         let json = serde_json::to_string(&pos).unwrap();
         let deserialized: PositionalSchema = serde_json::from_str(&json).unwrap();
-
+        
         assert_eq!(deserialized.name, pos.name);
         assert_eq!(deserialized.param_type, pos.param_type);
         assert_eq!(deserialized.required, pos.required);
         assert_eq!(deserialized.index, pos.index);
     }
 
+    /// Test that tool schema can be serialized and deserialized without data loss
     #[test]
     fn test_serialization_roundtrip_tool() {
         let tool = ToolSchema {
@@ -311,29 +324,31 @@ mod tests {
 
         let json = serde_json::to_string(&tool).unwrap();
         let deserialized: ToolSchema = serde_json::from_str(&json).unwrap();
-
+        
         assert_eq!(deserialized.name, tool.name);
         assert_eq!(deserialized.description, tool.description);
     }
 
+    /// Test that "type" field in JSON correctly maps to "param_type" field in Rust struct
     #[test]
     fn test_type_field_renamed_correctly() {
         let json = r#"{"name": "test", "type": "string", "description": "desc", "required": true}"#;
         let pos: PositionalSchema = serde_json::from_str(json).unwrap();
-
+        
         // "type" in JSON should map to "param_type" in struct
         assert_eq!(pos.param_type, "string");
-
+        
         // When serialized, it should be "type" again
         let serialized = serde_json::to_value(&pos).unwrap();
         assert!(serialized.get("type").is_some());
         assert_eq!(serialized["type"], "string");
     }
 
+    /// Test that all parameter types (string, number, boolean, etc.) deserialize correctly
     #[test]
     fn test_param_types_variety() {
         let types = vec!["string", "number", "boolean", "array", "path", "object"];
-
+        
         for param_type in types {
             let json = format!(
                 r#"{{"name": "test", "type": "{}", "description": "desc", "required": false}}"#,
@@ -344,6 +359,7 @@ mod tests {
         }
     }
 
+    /// Test that invalid/incomplete JSON returns an error instead of panicking
     #[test]
     fn test_invalid_json_fails_gracefully() {
         let invalid_json = r#"{"name": "test", "type": "string"}"#; // missing required field
@@ -351,6 +367,7 @@ mod tests {
         assert!(result.is_err());
     }
 
+    /// Test that parameter names with special characters (hyphens, etc.) are preserved
     #[test]
     fn test_schema_with_special_characters_in_names() {
         let json = r#"{

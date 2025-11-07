@@ -237,12 +237,14 @@ mod tests {
         FoundryMcpHandler::new(executor)
     }
 
+    /// Test that MCP handler can be created successfully
     #[test]
     fn test_handler_creation() {
         let handler = create_test_handler();
         assert!(handler.foundry_bin_path().is_none() || handler.foundry_bin_path().is_some());
     }
 
+    /// Test that server info contains correct name, version, and instructions
     #[test]
     fn test_get_info_returns_valid_server_info() {
         let handler = create_test_handler();
@@ -257,6 +259,7 @@ mod tests {
         assert!(info.instructions.is_some());
     }
 
+    /// Test that server advertises correct MCP capabilities (resources, tools, but not prompts)
     #[test]
     fn test_get_info_capabilities() {
         let handler = create_test_handler();
@@ -272,6 +275,7 @@ mod tests {
         assert!(info.capabilities.prompts.is_none());
     }
 
+    /// Test that server info includes a valid MCP protocol version
     #[test]
     fn test_get_info_protocol_version() {
         let handler = create_test_handler();
@@ -282,6 +286,7 @@ mod tests {
         assert!(!version_str.is_empty());
     }
 
+    /// Test that handler implements Clone trait and clones preserve state
     #[test]
     fn test_handler_is_clone() {
         let handler = create_test_handler();
@@ -291,6 +296,7 @@ mod tests {
         assert_eq!(handler.foundry_bin_path(), cloned.foundry_bin_path());
     }
 
+    /// Test that handler correctly wraps executor with custom security config
     #[test]
     fn test_handler_preserves_executor_config() {
         let schema = SchemaFile { tools: vec![] };
@@ -306,6 +312,7 @@ mod tests {
         // The config restrictions are enforced at the executor level
     }
 
+    /// Test that server info includes website URL pointing to Foundry
     #[test]
     fn test_server_info_has_website() {
         let handler = create_test_handler();
@@ -316,6 +323,7 @@ mod tests {
         assert!(website.contains("foundry"));
     }
 
+    /// Test that capabilities structure has valid optional fields
     #[test]
     fn test_capabilities_structure() {
         let handler = create_test_handler();
@@ -333,6 +341,7 @@ mod tests {
         }
     }
 
+    /// Test that handler correctly wraps executor and preserves its bin path
     #[test]
     fn test_handler_new_wraps_executor_correctly() {
         let schema = SchemaFile { tools: vec![] };
@@ -345,6 +354,7 @@ mod tests {
         assert_eq!(handler.foundry_bin_path(), &bin_path);
     }
 
+    /// Test that multiple handlers can be created and used independently
     #[test]
     fn test_multiple_handlers_can_coexist() {
         let handler1 = create_test_handler();
