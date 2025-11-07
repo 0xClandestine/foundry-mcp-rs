@@ -175,15 +175,16 @@ impl FoundryExecutor {
         // Add positional arguments
         for pos in &tool.positionals {
             let description = context.positional_description(&pos.name, &pos.description);
+            let param_name = pos.name.to_lowercase();
             properties.insert(
-                pos.name.clone(),
+                param_name.clone(),
                 serde_json::json!({
                     "type": Self::map_type(&pos.param_type),
                     "description": description,
                 }),
             );
             if pos.required {
-                required.push(Value::String(pos.name.clone()));
+                required.push(Value::String(param_name));
             }
         }
 
@@ -194,6 +195,7 @@ impl FoundryExecutor {
             }
 
             let description = context.flag_description(&opt.name, &opt.description);
+            let param_name = opt.name.to_lowercase();
             let mut prop = serde_json::json!({
                 "type": Self::map_type(&opt.param_type),
                 "description": description,
@@ -203,9 +205,9 @@ impl FoundryExecutor {
                     .unwrap()
                     .insert("default".to_string(), default.clone());
             }
-            properties.insert(opt.name.clone(), prop);
+            properties.insert(param_name.clone(), prop);
             if opt.required {
-                required.push(Value::String(opt.name.clone()));
+                required.push(Value::String(param_name));
             }
         }
 
@@ -216,15 +218,16 @@ impl FoundryExecutor {
             }
 
             let description = context.flag_description(&flag.name, &flag.description);
+            let param_name = flag.name.to_lowercase();
             properties.insert(
-                flag.name.clone(),
+                param_name.clone(),
                 serde_json::json!({
                     "type": "boolean",
                     "description": description,
                 }),
             );
             if flag.required {
-                required.push(Value::String(flag.name.clone()));
+                required.push(Value::String(param_name));
             }
         }
 
@@ -296,7 +299,8 @@ impl FoundryExecutor {
             positionals.sort_by_key(|p| p.index.unwrap_or(0));
 
             for pos in positionals {
-                if let Some(value) = args.get(&pos.name) {
+                let param_name = pos.name.to_lowercase();
+                if let Some(value) = args.get(&param_name) {
                     Self::add_positional_argument(&mut cmd, value, &pos.param_type)?;
                 } else if pos.required {
                     anyhow::bail!("Required positional argument '{}' not provided", pos.name);
@@ -305,7 +309,8 @@ impl FoundryExecutor {
 
             // Add flags (boolean options)
             for flag in &tool.flags {
-                if let Some(value) = args.get(&flag.name) {
+                let param_name = flag.name.to_lowercase();
+                if let Some(value) = args.get(&param_name) {
                     if let Some(true) = value.as_bool() {
                         cmd.arg(format!("--{}", flag.name));
                     }
@@ -314,7 +319,8 @@ impl FoundryExecutor {
 
             // Add options (flags with values)
             for opt in &tool.options {
-                if let Some(value) = args.get(&opt.name) {
+                let param_name = opt.name.to_lowercase();
+                if let Some(value) = args.get(&param_name) {
                     Self::add_option_argument(&mut cmd, &opt.name, value, &opt.param_type)?;
                 } else if opt.required {
                     anyhow::bail!("Required option '{}' not provided", opt.name);
